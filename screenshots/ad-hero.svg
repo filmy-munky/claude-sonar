@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif">
+  <!-- Pitch-black background, Apple ad style -->
+  <rect width="1200" height="675" fill="#000"/>
+
+  <!-- Kicker -->
+  <text x="600" y="180" text-anchor="middle" fill="#8a8a8e" font-size="14" font-weight="500" letter-spacing="4">
+    AFTER EVERY TURN
+  </text>
+
+  <!-- Hero quote (italic, serif feel from SF Pro italic) -->
+  <text x="600" y="290" text-anchor="middle" fill="#f5f5f7" font-size="42" font-weight="500" font-style="italic">
+    "All three hero demos
+  </text>
+  <text x="600" y="350" text-anchor="middle" fill="#f5f5f7" font-size="42" font-weight="500" font-style="italic">
+    have passed validation, sir."
+  </text>
+
+  <!-- Waveform bars -->
+  <g fill="#0a84ff">
+    <rect x="505" y="430" width="6" height="18" rx="3">
+      <animate attributeName="height" values="18;38;18" dur="1.1s" begin="0s"    repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;420;430" dur="1.1s" begin="0s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="521" y="430" width="6" height="34" rx="3">
+      <animate attributeName="height" values="34;58;34" dur="1.1s" begin="0.08s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;418;430" dur="1.1s" begin="0.08s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="537" y="430" width="6" height="50" rx="3">
+      <animate attributeName="height" values="50;74;50" dur="1.1s" begin="0.16s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;418;430" dur="1.1s" begin="0.16s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="553" y="430" width="6" height="66" rx="3">
+      <animate attributeName="height" values="66;86;66" dur="1.1s" begin="0.24s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;420;430" dur="1.1s" begin="0.24s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="569" y="430" width="6" height="46" rx="3">
+      <animate attributeName="height" values="46;70;46" dur="1.1s" begin="0.32s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;418;430" dur="1.1s" begin="0.32s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="585" y="430" width="6" height="60" rx="3">
+      <animate attributeName="height" values="60;84;60" dur="1.1s" begin="0.40s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;418;430" dur="1.1s" begin="0.40s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="601" y="430" width="6" height="30" rx="3">
+      <animate attributeName="height" values="30;54;30" dur="1.1s" begin="0.48s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;418;430" dur="1.1s" begin="0.48s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="617" y="430" width="6" height="50" rx="3">
+      <animate attributeName="height" values="50;70;50" dur="1.1s" begin="0.56s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;420;430" dur="1.1s" begin="0.56s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="633" y="430" width="6" height="40" rx="3">
+      <animate attributeName="height" values="40;60;40" dur="1.1s" begin="0.64s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;420;430" dur="1.1s" begin="0.64s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="649" y="430" width="6" height="22" rx="3">
+      <animate attributeName="height" values="22;44;22" dur="1.1s" begin="0.72s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="430;420;430" dur="1.1s" begin="0.72s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- Brand lockup -->
+  <circle cx="546" cy="575" r="6" fill="#0a84ff">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="560" y="580" fill="#8a8a8e" font-size="13" font-weight="500" letter-spacing="3">
+    CLAUDE-CODE-JARVIS
+  </text>
+
+  <!-- Accent progress bar -->
+  <rect x="0" y="673" width="1200" height="2" fill="#1c1c1f"/>
+  <rect x="0" y="673" width="400" height="2" fill="#0a84ff"/>
+</svg>

@@ -99,7 +99,7 @@ Tail `~/.claude/hooks/voice.log` — every invocation logs there.
 
 *Sonar* — scanning multiple targets you can't see. They ping you back when they have something to report.
 
-*AXE — Automated X-platform Engine.* The assistant callsign. Pronounced like the tool — one word, never spelled out.
+*AXE — Automated X-platform Engine.* The assistant callsign.
 
 ---
 

@@ -6,6 +6,8 @@ I run 12+ projects and 8+ terminals at the same time. My AI assistant **AXE — 
 
 ![VSCode — 12+ projects, 8+ terminals, AXE speaks from each](./screenshots/vscode-real.png)
 
+![AXE voice in action](./screenshots/ad-hero.svg)
+
 ---
 
 ## Why this exists

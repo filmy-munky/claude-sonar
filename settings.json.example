@@ -1,19 +1,34 @@
 {
-  "_comment": "Merge the `hooks.Stop` block below into your existing ~/.claude/settings.json. The Glass chime and the voice run in parallel — the chime fires instantly while the voice script forks async and returns immediately.",
+  "_comment": "Merge these hook blocks into your existing ~/.claude/settings.json. AXE speaks on every pause point: stop, permission request, subagent completion, and notification. Each hook runs in parallel — chime fires instantly, voice catches up async.",
   "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          { "type": "command", "command": "afplay /System/Library/Sounds/Ping.aiff &", "timeout": 5 },
+          { "type": "command", "command": "/Users/YOU/.claude/hooks/axe-voice.sh", "timeout": 10 }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/Glass.aiff &",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "/Users/YOU/.claude/hooks/axe-voice.sh",
-            "timeout": 10
-          }
+          { "type": "command", "command": "afplay /System/Library/Sounds/Glass.aiff &", "timeout": 5 },
+          { "type": "command", "command": "/Users/YOU/.claude/hooks/axe-voice.sh", "timeout": 10 }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "afplay /System/Library/Sounds/Submarine.aiff &", "timeout": 5 },
+          { "type": "command", "command": "/Users/YOU/.claude/hooks/axe-voice.sh", "timeout": 10 }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          { "type": "command", "command": "/Users/YOU/.claude/hooks/axe-voice.sh", "timeout": 10 }
         ]
       }
     ]

@@ -6,7 +6,7 @@
 set +e
 
 # --- Config -----------------------------------------------------------------
-PYTHON_BIN="$(command -v python3)"
+PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/3.10/bin/python3"
 EDGE_VOICE="en-GB-RyanNeural"
 GROQ_MODEL="llama-3.1-8b-instant"
 GROQ_URL="https://api.groq.com/openai/v1/chat/completions"
@@ -28,19 +28,36 @@ INPUT=$(cat)
 TRANSCRIPT=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
 [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ] && exit 0
 
-# --- Extract last assistant text content ------------------------------------
+# --- Extract last assistant content (text OR tool actions) ------------------
 TEXT=""
+TOOL_SUMMARY=""
+FOUND_ASSISTANT=0
+
 while IFS= read -r line; do
   [ -z "$line" ] && continue
   ROLE=$(printf '%s' "$line" | jq -r '.type // empty' 2>/dev/null)
   if [ "$ROLE" = "assistant" ]; then
+    FOUND_ASSISTANT=1
+    # Try text content first
     CONTENT=$(printf '%s' "$line" | jq -r '[.message.content[]? | select(.type=="text") | .text] | join(" ")' 2>/dev/null)
     if [ -n "$CONTENT" ] && [ "$CONTENT" != "null" ]; then
       TEXT="$CONTENT"
       break
     fi
+    # No text — grab tool_use names as fallback
+    if [ -z "$TOOL_SUMMARY" ]; then
+      TOOLS=$(printf '%s' "$line" | jq -r '[.message.content[]? | select(.type=="tool_use") | .name] | join(", ")' 2>/dev/null)
+      if [ -n "$TOOLS" ] && [ "$TOOLS" != "null" ]; then
+        TOOL_SUMMARY="Tools used: $TOOLS"
+      fi
+    fi
   fi
-done < <(tail -r "$TRANSCRIPT")
+  # Stop after checking last 20 entries to avoid slow scans
+  if [ "$FOUND_ASSISTANT" -eq 1 ] && [ -z "$TEXT" ] && [ -n "$TOOL_SUMMARY" ]; then
+    TEXT="$TOOL_SUMMARY"
+    break
+  fi
+done < <(tail -r "$TRANSCRIPT" | head -40)
 
 [ -z "$TEXT" ] && exit 0
 

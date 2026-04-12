@@ -28,6 +28,46 @@ INPUT=$(cat)
 TRANSCRIPT=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
 [ -z "$TRANSCRIPT" ] || [ ! -f "$TRANSCRIPT" ] && exit 0
 
+# --- Detect project name ----------------------------------------------------
+PROJECT=""
+
+# Method 1: cwd from hook input (most reliable if available)
+CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
+if [ -n "$CWD" ] && [ "$CWD" != "null" ]; then
+  PROJECT=$(basename "$CWD")
+fi
+
+# Method 2: extract from file paths in recent tool_use entries
+if [ -z "$PROJECT" ] || [ "$PROJECT" = "WORK" ]; then
+  TOOL_PATH=$(tail -r "$TRANSCRIPT" | head -20 \
+    | jq -r '.message.content[]? | select(.type=="tool_use") | .input.file_path // .input.path // .input.command // empty' 2>/dev/null \
+    | grep -m1 '/Users/' \
+    | sed -E 's|.*/WORK/([^/]+).*|\1|' 2>/dev/null)
+  if [ -n "$TOOL_PATH" ] && [ "$TOOL_PATH" != "WORK" ]; then
+    PROJECT="$TOOL_PATH"
+  fi
+fi
+
+# Method 3: extract from transcript path (encodes working dir with dashes)
+if [ -z "$PROJECT" ] || [ "$PROJECT" = "WORK" ]; then
+  TPATH=$(dirname "$TRANSCRIPT")
+  ENCODED=$(echo "$TPATH" | grep -oE 'projects/[^/]+' | head -1 | sed 's|projects/||')
+  if [ -n "$ENCODED" ]; then
+    # Transcript path encodes cwd as -Users-punith-Downloads-WORK-projectname
+    LAST_SEGMENT=$(echo "$ENCODED" | sed 's/.*-WORK-//' | sed 's/-.*//')
+    if [ -n "$LAST_SEGMENT" ] && [ "$LAST_SEGMENT" != "$ENCODED" ]; then
+      PROJECT="$LAST_SEGMENT"
+    fi
+  fi
+fi
+
+# Clean up project name: capitalize first letter, strip leading dots/dashes
+if [ -n "$PROJECT" ] && [ "$PROJECT" != "WORK" ]; then
+  PROJECT=$(echo "$PROJECT" | sed 's/^[._-]*//' | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+else
+  PROJECT="workspace"
+fi
+
 # --- Extract last assistant content (text OR tool actions) ------------------
 TEXT=""
 TOOL_SUMMARY=""
@@ -68,22 +108,31 @@ SUMMARY_INPUT=$(printf '%s' "$TEXT" | head -c 1800)
 pkill -x afplay 2>/dev/null
 
 (
-  SYSTEM_PROMPT='You are AXE, a JARVIS-style voice module for an engineer (call him "sir"). Given an assistant message, output ONE short spoken status line (5-12 words) in calm British butler tone.
+  SYSTEM_PROMPT='You are AXE, a JARVIS-style voice module for an engineer (call him "sir"). Given an assistant message and a project name, output ONE short spoken status line (8-15 words) in calm British butler tone.
 
 RULES:
 - Output ONLY the spoken line. No quotes. No preamble. No markdown. No explanation.
 - Always address the user as "sir".
+- ALWAYS name the project. Examples:
+  "Build successful for Witness, sir."
+  "Need your attention on Tripwire, sir. Foreign key conflict."
+  "All 48 tests passing for Prism, sir."
+  "Permission required for Meeting Mind deploy, sir."
+  "Agent returned results for Project X, sir."
 - Be SPECIFIC to the actual content — never generic like "task complete" or "ready".
-- If the message asks a question, phrase as a clarification request naming the subject.
-- If the message reports completion, state what specifically completed.
-- If the message reports an issue, state the specific issue.
-- Under 12 words. Shorter is better.
+- If the message asks a question, phrase as a clarification request naming the subject and project.
+- If the message reports completion, state what specifically completed and for which project.
+- If the message reports an error or issue, state the specific issue and the project.
+- If the message needs permission, say what action needs approval and for which project.
+- 8-15 words. Include the project name. Shorter is better after that.
 - Say "AXE" as one word (rhymes with "tax"), never spell letters.'
 
-  # Build JSON payload with jq (safely handles special chars)
+  # Build JSON payload — inject project context into the user message
+  USER_MSG="[Project: $PROJECT] $SUMMARY_INPUT"
+
   PAYLOAD=$(jq -n \
     --arg sys "$SYSTEM_PROMPT" \
-    --arg usr "$SUMMARY_INPUT" \
+    --arg usr "$USER_MSG" \
     --arg model "$GROQ_MODEL" \
     '{
       model: $model,

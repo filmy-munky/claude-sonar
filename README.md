@@ -2,9 +2,9 @@
 
 ### [Solved] The observability gap in parallel AI agent workflows — hear what every Claude Code session just did, without looking.
 
-I run 12+ projects and 4 Claude Code terminals at the same time. My AI assistant **AXE — Automated X-platform Engine** — speaks a contextual status line after every turn, so I know which workflow just finished without alt-tabbing.
+I run 12+ projects and 8+ terminals at the same time. My AI assistant **AXE — Automated X-platform Engine** — speaks a contextual status line after every turn, so I know which workflow just finished without alt-tabbing.
 
-![VSCode with 4 Claude terminals](./screenshots/vscode-multi-terminal.svg)
+![VSCode — 12+ projects, 8+ terminals, AXE speaks from each](./screenshots/vscode-real.png)
 
 ---
 

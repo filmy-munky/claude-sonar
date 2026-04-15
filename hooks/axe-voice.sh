@@ -10,8 +10,11 @@ PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/3.10/bin/python3"
 EDGE_VOICE="en-GB-RyanNeural"
 GROQ_MODEL="llama-3.1-8b-instant"
 GROQ_URL="https://api.groq.com/openai/v1/chat/completions"
-OUT_FILE="/tmp/axe-voice.mp3"
 CACHE_DIR="$HOME/.claude/hooks/voice-cache"
+# Output MP3 lives inside CACHE_DIR (user-owned) instead of /tmp to avoid
+# TOCTOU races on a world-writable location.
+OUT_FILE="$CACHE_DIR/axe-voice.mp3"
+PID_FILE="$CACHE_DIR/axe-voice.pid"
 LOG_FILE="$HOME/.claude/hooks/voice.log"
 ENV_FILE="$HOME/.claude/hooks/.env"
 FALLBACK_MP3="$CACHE_DIR/ready.mp3"
@@ -105,7 +108,18 @@ done < <(tail -r "$TRANSCRIPT" | head -40)
 SUMMARY_INPUT=$(printf '%s' "$TEXT" | head -c 1800)
 
 # --- Fork everything async --------------------------------------------------
-pkill -x afplay 2>/dev/null
+# Kill only our OWN previous afplay (if any) — never touch the user's music,
+# system notification chimes, or other hook playback.
+if [ -f "$PID_FILE" ]; then
+  PREV_PID=$(cat "$PID_FILE" 2>/dev/null)
+  if [ -n "$PREV_PID" ] && kill -0 "$PREV_PID" 2>/dev/null; then
+    # Only kill if the process is still afplay (PID recycling safety check)
+    if ps -p "$PREV_PID" -o comm= 2>/dev/null | grep -q "^afplay$"; then
+      kill "$PREV_PID" 2>/dev/null
+    fi
+  fi
+  rm -f "$PID_FILE"
+fi
 
 (
   # Address preference: "sir" | "ma'am" | "neutral". Defaults to "sir".
@@ -114,32 +128,32 @@ pkill -x afplay 2>/dev/null
     sir|Sir|SIR)
       ADDRESS_INTRO='a JARVIS-style voice module for an engineer (call him "sir")'
       ADDRESS_RULE='- Always address the user as "sir".'
-      EX1='"Build successful for Witness, sir."'
-      EX2='"Need your attention on Tripwire, sir. Foreign key conflict."'
-      EX3='"All 48 tests passing for Prism, sir."'
-      EX4='"Permission required for Meeting Mind deploy, sir."'
-      EX5='"Agent returned results for Project X, sir."'
+      EX1='"Build successful for api-service, sir."'
+      EX2='"Need your attention on auth-gateway, sir. Foreign key conflict."'
+      EX3='"All 48 tests passing for dashboard, sir."'
+      EX4='"Permission required for worker-queue deploy, sir."'
+      EX5='"Agent returned results for data-pipeline, sir."'
       ;;
     "ma'am"|maam|Maam|MAAM|"Ma'am"|"MA'AM"|mam|Mam|MAM)
       # Spelled "mam" (not "ma'am") because en-GB-RyanNeural swallows the
       # apostrophe form. "mam" TTS-renders as a clear British "mam".
       ADDRESS_INTRO='a JARVIS-style voice module for an engineer (address her as "mam")'
       ADDRESS_RULE='- Always address the user as "mam" (spelled exactly m-a-m, NOT "ma'\''am" or "madam"). The TTS voice pronounces "mam" cleanly.'
-      EX1='"Build successful for Witness, mam."'
-      EX2='"Need your attention on Tripwire, mam. Foreign key conflict."'
-      EX3='"All 48 tests passing for Prism, mam."'
-      EX4='"Permission required for Meeting Mind deploy, mam."'
-      EX5='"Agent returned results for Project X, mam."'
+      EX1='"Build successful for api-service, mam."'
+      EX2='"Need your attention on auth-gateway, mam. Foreign key conflict."'
+      EX3='"All 48 tests passing for dashboard, mam."'
+      EX4='"Permission required for worker-queue deploy, mam."'
+      EX5='"Agent returned results for data-pipeline, mam."'
       ;;
     *)
       # neutral: no honorific at all
       ADDRESS_INTRO='a JARVIS-style voice module for an engineer'
       ADDRESS_RULE='- Do NOT use any honorific ("sir", "ma'\''am", "boss", etc.). Keep lines neutral and professional.'
-      EX1='"Build successful for Witness."'
-      EX2='"Need your attention on Tripwire. Foreign key conflict."'
-      EX3='"All 48 tests passing for Prism."'
-      EX4='"Permission required for Meeting Mind deploy."'
-      EX5='"Agent returned results for Project X."'
+      EX1='"Build successful for api-service."'
+      EX2='"Need your attention on auth-gateway. Foreign key conflict."'
+      EX3='"All 48 tests passing for dashboard."'
+      EX4='"Permission required for worker-queue deploy."'
+      EX5='"Agent returned results for data-pipeline."'
       ;;
   esac
 
@@ -179,11 +193,13 @@ $ADDRESS_RULE
       temperature: 0.7
     }')
 
-  # Call Groq with 5-sec timeout
+  # Call Groq with 5-sec timeout.
+  # NB: curl stderr is DISCARDED (not appended to voice.log) because verbose
+  # errors can echo the Authorization header, which contains the bearer token.
   RESPONSE=$(curl -s -m 5 "$GROQ_URL" \
     -H "Authorization: Bearer $GROQ_API_KEY" \
     -H "Content-Type: application/json" \
-    -d "$PAYLOAD" 2>>"$LOG_FILE")
+    -d "$PAYLOAD" 2>/dev/null)
 
   LINE=$(printf '%s' "$RESPONSE" | jq -r '.choices[0].message.content // empty' 2>/dev/null)
 
@@ -199,17 +215,24 @@ $ADDRESS_RULE
 
   # Fallback if empty
   if [ -z "$LINE" ]; then
-    [ -f "$FALLBACK_MP3" ] && afplay "$FALLBACK_MP3" >/dev/null 2>&1
+    if [ -f "$FALLBACK_MP3" ]; then
+      afplay "$FALLBACK_MP3" >/dev/null 2>&1 &
+      echo $! > "$PID_FILE"
+      wait $!
+    fi
     exit 0
   fi
 
-  # Synthesize and play
+  # Synthesize and play — record afplay PID so the next invocation kills
+  # only our own leftover playback, not the user's music/notifications.
   "$PYTHON_BIN" -m edge_tts --voice "$EDGE_VOICE" --text "$LINE" --write-media "$OUT_FILE" >/dev/null 2>&1
   if [ -f "$OUT_FILE" ]; then
-    afplay "$OUT_FILE" >/dev/null 2>&1
+    afplay "$OUT_FILE" >/dev/null 2>&1 &
   else
-    [ -f "$FALLBACK_MP3" ] && afplay "$FALLBACK_MP3" >/dev/null 2>&1
+    [ -f "$FALLBACK_MP3" ] && afplay "$FALLBACK_MP3" >/dev/null 2>&1 &
   fi
+  echo $! > "$PID_FILE"
+  wait $!
 ) >/dev/null 2>&1 &
 disown
 

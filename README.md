@@ -45,7 +45,7 @@ Every line above is real, pulled straight from `voice.log`. None are scripted �
 
 ## Key features
 
-- 🎯 **Project-aware voice** — every line names the project: *"Build successful for Witness, sir."* / *"Two test failures on Tripwire, sir."*
+- 🎯 **Project-aware voice** — every line names the project: *"Build successful for api-service, sir."* / *"Two test failures on auth-gateway, sir."*
 - 🗣️ **Pick how AXE addresses you** — installer asks at setup: **Sir**, **Mam** (British short form), or **Neutral** (no honorific). Stored as `AXE_ADDRESS` in `~/.claude/hooks/.env`; flip anytime with one edit.
 - 📡 **All events covered** — Stop, PermissionRequest, SubagentStop, Notification. AXE speaks on every pause, not just turn completion.
 - 🔧 **Tool-only turns included** — even if Claude only ran Edit/Bash/Write with no text reply, AXE still speaks about what tools were used.
